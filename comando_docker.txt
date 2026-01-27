@@ -1,0 +1,13 @@
+docker buildx build
+docker build -t marlonmarques/facilfinance:latest -f Dockerfile .
+docker push marlonmarques/facilfinance:latest
+
+#sites
+docker build -t marlonmarques/site:latest -f Dockerfile .
+docker push marlonmarques/site:latest
+docker build -t marlonmarques/registro:latest -f Dockerfile .
+docker push marlonmarques/registro:latest
+
+#capitalerp
+docker build -t marlonmarques/capitalerp:latest -f Dockerfile .
+docker push marlonmarques/capitaerp:latest
