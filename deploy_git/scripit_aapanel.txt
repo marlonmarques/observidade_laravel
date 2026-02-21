@@ -1,0 +1,43 @@
+#!/bin/bash
+LOG_FILE="/www/wwwroot/facilfinance.com/deploy.log"
+
+# Função para logar com data
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
+}
+
+log "---------------------------------------------"
+log "🚀 Iniciando Deploy via Webhook..."
+
+# 1. Garante que o usuário é root (opcional, mas docker geralmente precisa)
+if [ "$EUID" -ne 0 ]; then
+  log "⚠️  Aviso: Script não está rodando como root. UID: $EUID"
+fi
+
+# 2. Entra na pasta
+cd /www/server/panel/data/compose/facil || { log "❌ Erro: Pasta não encontrada!"; exit 1; }
+log "📂 Diretório atual: $(pwd)"
+
+# 3. Baixa as imagens (Redirecionando erros para o log)
+log "⬇️ Baixando imagens..."
+/usr/bin/docker compose pull app worker scheduler >> "$LOG_FILE" 2>&1
+if [ $? -ne 0 ]; then
+    log "❌ Erro ao baixar imagens. Tentando comando docker sem caminho completo..."
+    docker compose pull app worker scheduler >> "$LOG_FILE" 2>&1
+fi
+
+# 4. Atualiza os containers
+log "🔄 Recriando containers..."
+/usr/bin/docker compose up -d --remove-orphans >> "$LOG_FILE" 2>&1
+
+# 5. Limpeza e Otimização
+log "🧹 Limpando sistema..."
+/usr/bin/docker image prune -f >> "$LOG_FILE" 2>&1
+
+log "⚡ Otimizando Laravel..."
+/usr/bin/docker compose exec -T app php artisan optimize:clear >> "$LOG_FILE" 2>&1
+
+log "✅ Fim do script."
+
+#esse e para colocar no git
+http://145.223.94.246:7800/hook?access_key=rxl52n9w8WuNscBBkD6LU7jSZhxst6zyx7tBIIbsh2KRhmSX&param=deploy

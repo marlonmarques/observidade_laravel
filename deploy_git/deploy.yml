@@ -1,0 +1,40 @@
+name: Deploy via Webhook aaPanel
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    environment: dploy_producao
+
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      # 1. Login e Build (Igual ao anterior)
+      - name: Login no Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build e Push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: marlonmarques/facilfinance:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # 2. Dispara o Webhook do aaPanel
+      - name: Disparar Deploy na VPS
+        run: |
+          echo "Disparando webhook..."
+          curl -X POST "${{ secrets.AAPANEL_WEBHOOK_URL }}"
